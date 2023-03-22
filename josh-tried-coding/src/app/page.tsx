@@ -1,6 +1,7 @@
 "use client";
 import styles from "./page.module.css";
-import { useState } from "react";
+import { ChangeEvent, useCallback, useState } from "react";
+import debounce from "lodash.debounce";
 
 const mockValues = [
     "Result",
@@ -19,6 +20,7 @@ const mockValues = [
 
 export default function Home() {
     const [results, setResults] = useState<Array<string>>([]);
+    const [searchTerm, setSearchTerm] = useState<string>("");
 
     const getSearchResults = async (searchItem: string) => {
         console.log("Sending an API request");
@@ -27,13 +29,24 @@ export default function Home() {
             value.toLowerCase().includes(searchItem.toLowerCase())
         );
     };
-    const handleInput = async (searchItem: string) => {
+
+    const request = debounce(async (searchItem: string) => {
         const value = await getSearchResults(searchItem);
         setResults(value);
+    }, 300);
+
+    const debounceRequest = useCallback(
+        async (searchItem: string) => await request(searchItem),
+        []
+    );
+
+    const onChange = (e: ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(e.target.value);
+        debounceRequest(e.target.value);
     };
     return (
         <main className={styles.main}>
-            <input type='text' onChange={(e) => handleInput(e.target.value)} />
+            <input type='text' value={searchTerm} onChange={onChange} />
             {results.map((result) => {
                 return <span key={result}>{result}</span>;
             })}
